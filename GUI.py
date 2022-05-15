@@ -13,7 +13,7 @@ class TrafficLight(QWidget):
 
     def __init__(self):
         super().__init__()
-        size = QSize(1700, 1000)
+        size = QSize(1300, 900)
         self.initUI(size)
         self.video = video(self, QSize(self.frm.width(), self.frm.height()))
 
