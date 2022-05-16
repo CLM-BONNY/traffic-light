@@ -13,6 +13,7 @@ class TrafficLight(QWidget):
 
     def __init__(self):
         super().__init__()
+        self.flag = None
         size = QSize(1300, 900)
         self.sec = 0
         self.click = "open"
@@ -117,21 +118,25 @@ class TrafficLight(QWidget):
                 break
             else:
                 self.sec = self.sec - 1
+                print('초록불 남은 시간', self.sec)
                 self.lcd.display(self.sec)
                 time.sleep(1)
 
-    def time_add(self):
-        self.wait = 3
-        self.sec += 4
-        # 추후 수정
-        # self.red = QPixmap('image/redOff.jpeg')
-        # self.red_img.setPixmap(self.red)
-        # self.green = QPixmap('image/greenOn.png')
-        # self.green_img.setPixmap(self.green)
-        self.state.setText('4초 추가되었습니다. \n안전하게 건너가십시오.')
-        QApplication.processEvents()
+    # 추후 수정
+    # def time_add(self):
+    #     # self.wait = 3
+    #     self.sec += 4
+    #     # 추후 수정
+    #     # self.red = QPixmap('image/redOff.jpeg')
+    #     # self.red_img.setPixmap(self.red)
+    #     # self.green = QPixmap('image/greenOn.png')
+    #     # self.green_img.setPixmap(self.green)
+    #     self.state.setText('4초 추가되었습니다. \n안전하게 건너가십시오.')
+    #     print('초록불 남은 시간', self.sec)
+    #     QApplication.processEvents()
 
     def t_light_on(self):
+        self.flag = "on"
         self.red = QPixmap('image/redOff.jpeg')
         self.red_img.setPixmap(self.red)
         self.green = QPixmap('image/greenOn.png')
@@ -139,9 +144,9 @@ class TrafficLight(QWidget):
         self.state.setText('안전하게 건너가십시오.')
         QApplication.processEvents()
         self.time_sub()
-        print("초록불")
 
     def t_light_off(self):
+        self.flag = "off"
         # 추후 수정
         # self.red = QPixmap('image/redOn.jpeg')
         # self.red_img.setPixmap(self.red)
@@ -149,7 +154,6 @@ class TrafficLight(QWidget):
         # self.green_img.setPixmap(self.green)
         self.state.setText('잠시만 기다려주십시오.')
         QApplication.processEvents()
-        print("빨간불")
 
     def main_traffic(self):
         self.wait = 3
@@ -157,14 +161,18 @@ class TrafficLight(QWidget):
             self.video.status = ""
             time.sleep(1)
             if self.video.status == "주먹" and self.sec == 0:
+                print('주먹 감지')
                 timer = Thread(target=self.t_light_on)
                 timer.start()
-            if self.video.status == "가위" and self.sec <= 2:
-                print('가위 감지')
-                self.time_add()
+
+            # 추후 수정
+            # if self.flag == 'on':
+            #     if self.video.status == "가위" and self.sec <= 2:
+            #         print('가위 감지')
+            #         self.time_add()
             if self.sec == 0:
                 self.wait -= 1
-                print('대기, 남은시간 :', self.wait)
+                print('빨간불 남은시간 :', self.wait)
             if self.wait <= 0:
                 self.wait = 3
                 if len(self.video.faces) != 0:
