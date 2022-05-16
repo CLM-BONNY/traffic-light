@@ -2,9 +2,7 @@ import cv2
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from threading import Thread
-import time
 import mediapipe as mp
-from PIL import ImageFont, ImageDraw, Image
 import numpy as np
 
 
@@ -16,6 +14,7 @@ class video(QObject):
         self.widget = widget
         self.size = size
         self.sendImage.connect(self.widget.recvImage)
+        self.status = ""
 
         self.detector = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
@@ -45,9 +44,9 @@ class video(QObject):
                 if ok:
                     # 얼굴 인식
                     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    faces = self.detector.detectMultiScale(gray, 1.3, 5)
+                    self.faces = self.detector.detectMultiScale(gray, 1.3, 5)
 
-                    for (x, y, w, h) in faces:
+                    for (x, y, w, h) in self.faces:
                         cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
                     # 손 인식
@@ -118,17 +117,12 @@ class video(QObject):
                                             hand_landmarks.landmark[self.mp_hands.HandLandmark.PINKY_TIP].y * image_height:
                                         pinky_finger_state = 1
 
-                            font = ImageFont.truetype("ChosunCentennial_ttf.ttf", 80)
-                            image = Image.fromarray(image)
-                            draw = ImageDraw.Draw(image)
-
-                            text = ""
                             if thumb_finger_state == 1 and index_finger_state == 1 and middle_finger_state == 1 and ring_finger_state == 1 and pinky_finger_state == 1:
-                                text = "보"
+                                self.status = "보"
                             elif thumb_finger_state == 1 and index_finger_state == 1 and middle_finger_state == 0 and ring_finger_state == 0 and pinky_finger_state == 0:
-                                text = "가위"
+                                self.status = "가위"
                             elif index_finger_state == 0 and middle_finger_state == 0 and ring_finger_state == 0 and pinky_finger_state == 0:
-                                text = "주먹"
+                                self.status = "주먹"
 
                             image = np.array(image)
 
@@ -140,7 +134,7 @@ class video(QObject):
                                 self.mp_drawing_styles.get_default_hand_landmarks_style(),
                                 self.mp_drawing_styles.get_default_hand_connections_style())
 
-
+                    # 영상 보내기
                     rgb = cv2.cvtColor(cv2.flip(frame, 1), cv2.COLOR_BGR2RGB)
                     h, w, ch = rgb.shape
                     bytesPerLine = ch * w
