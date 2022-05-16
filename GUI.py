@@ -1,54 +1,60 @@
 import sys
 from PyQt5.QtWidgets import (QApplication, QWidget, QPushButton,
-QLabel, QVBoxLayout, QHBoxLayout, QGridLayout, QLCDNumber,
-                             QFrame)
+                             QLabel, QVBoxLayout, QHBoxLayout,
+                             QGridLayout, QLCDNumber,QFrame)
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import QCoreApplication, QSize, Qt
 
-from webCam import *
+import time
 
-# from feature import main_traffic
+from webCam import *
 
 class TrafficLight(QWidget):
 
     def __init__(self):
         super().__init__()
         size = QSize(1300, 900)
+        self.sec = 0
+        self.click = "open"
+        self.red = QPixmap('image/redOff.jpeg')
+        self.green = QPixmap('image/greenOff.png')
         self.initUI(size)
         self.video = video(self, QSize(self.frm.width(), self.frm.height()))
 
+
     def initUI(self, size):
+
         # 신호등 빨간불 이미지
-        red = QPixmap('image/redOff.jpeg')
-        red_img = QLabel()
-        red_img.setPixmap(red)
+        self.red_img = QLabel()
+        self.red = QPixmap('image/redOff.jpeg')
+        self.red_img.setPixmap(self.red)
         rbox = QVBoxLayout()
-        rbox.addWidget(red_img)
+        rbox.addWidget(self.red_img)
 
         # 신호등 파란불 이미지
-        green = QPixmap('image/greenOff.jpeg')
-        green_img = QLabel()
-        green_img.setPixmap(green)
+        self.green_img = QLabel()
+        self.green = QPixmap('image/greenOff.jpeg')
+        self.green_img.setPixmap(self.green)
         gbox = QVBoxLayout()
-        gbox.addWidget(green_img)
+        gbox.addWidget(self.green_img)
 
         # 신호등 파란불 남은 시간
-        lcd = QLCDNumber(self)
-        # lcd.display(time.sec)
-        lcd.setStyleSheet('color: green')
-        lcd.setFixedSize(200, 200)
+        self.lcd = QLCDNumber(self)
+        self.lcd.display(self.sec)
+        self.lcd.setStyleSheet('color: green')
+        self.lcd.setFixedSize(200, 200)
 
         # 신호등 레이아웃
         lightLayout = QGridLayout()
         lightLayout.setSpacing(0)
         lightLayout.addLayout(rbox, 0, 0)
         lightLayout.addLayout(gbox, 1, 0)
-        lightLayout.addWidget(lcd, 2, 0)
+        lightLayout.addWidget(self.lcd, 2, 0)
 
         # 시작 버튼
         self.sbtn = QPushButton('Start', self)
         self.sbtn.setStyleSheet('background-color: grey; color: white')
-        self.sbtn.clicked.connect(self.onoffCam)
+        self.sbtn.clicked.connect(self.sbtn_clicked)
 
         # 종료 버튼
         self.qbtn = QPushButton('Quit', self)
@@ -61,13 +67,12 @@ class TrafficLight(QWidget):
         btnBox.addWidget(self.qbtn)
 
         # 현재 상태 표시 문구
-        stateStr = '프로그램 시작 전입니다.'
-        state = QLabel(stateStr)
-        state.setAlignment(Qt.AlignCenter)
+        self.state = QLabel('프로그램 시작 전입니다.')
+        self.state.setAlignment(Qt.AlignCenter)
 
         # 현재 상태, 버튼 레이아웃
         runLayout = QVBoxLayout()
-        runLayout.addWidget(state)
+        runLayout.addWidget(self.state)
         runLayout.addLayout(btnBox)
 
         # 웹캠 레이아웃
@@ -90,20 +95,81 @@ class TrafficLight(QWidget):
         self.setWindowTitle('TrafficLight')
         self.show()
 
-    def onoffCam(self, e):
+    def sbtn_clicked(self, e):
         self.video.startCam()
-
-    # def sbtn_clicked(self):
-    #    main_traffic()
-
+        main = Thread(target=self.main_traffic)
+        main.start()
 
     def qbtn_clicked(self):
-        QCoreApplication.instance.quit()
-        click = "close"
-
+        self.click = "close"
+        a = QCoreApplication.instance()
+        a.quit()
 
     def recvImage(self, img):
         self.frm.setPixmap(QPixmap.fromImage(img))
+
+    def time_sub(self):
+        self.wait = 3
+        self.sec = 5
+        while True:
+            if self.sec == 0:
+                self.t_light_off()
+                break
+            else:
+                self.sec = self.sec - 1
+                self.lcd.display(self.sec)
+                time.sleep(1)
+
+    def time_add(self):
+        self.wait = 3
+        self.sec += 4
+        # 추후 수정
+        # self.red = QPixmap('image/redOff.jpeg')
+        # self.red_img.setPixmap(self.red)
+        # self.green = QPixmap('image/greenOn.png')
+        # self.green_img.setPixmap(self.green)
+        self.state.setText('4초 추가되었습니다. \n안전하게 건너가십시오.')
+        QApplication.processEvents()
+
+    def t_light_on(self):
+        self.red = QPixmap('image/redOff.jpeg')
+        self.red_img.setPixmap(self.red)
+        self.green = QPixmap('image/greenOn.png')
+        self.green_img.setPixmap(self.green)
+        self.state.setText('안전하게 건너가십시오.')
+        QApplication.processEvents()
+        self.time_sub()
+        print("초록불")
+
+    def t_light_off(self):
+        # 추후 수정
+        # self.red = QPixmap('image/redOn.jpeg')
+        # self.red_img.setPixmap(self.red)
+        # self.green = QPixmap('image/greenOff.png')
+        # self.green_img.setPixmap(self.green)
+        self.state.setText('잠시만 기다려주십시오.')
+        QApplication.processEvents()
+        print("빨간불")
+
+    def main_traffic(self):
+        self.wait = 3
+        while self.click != 'close':
+            self.video.status = ""
+            time.sleep(1)
+            if self.video.status == "주먹" and self.sec == 0:
+                timer = Thread(target=self.t_light_on)
+                timer.start()
+            if self.video.status == "가위" and self.sec <= 2:
+                print('가위 감지')
+                self.time_add()
+            if self.sec == 0:
+                self.wait -= 1
+                print('대기, 남은시간 :', self.wait)
+            if self.wait <= 0:
+                self.wait = 3
+                if len(self.video.faces) != 0:
+                    print('사람 얼굴 인식')
+                    self.t_light_on()
 
 
 if __name__ == '__main__':
