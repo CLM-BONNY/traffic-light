@@ -14,7 +14,6 @@ class video(QObject):
         self.widget = widget
         self.size = size
         self.sendImage.connect(self.widget.recvImage)
-        self.status = ""
 
         self.detector = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
@@ -36,6 +35,7 @@ class video(QObject):
             self.thread.start()
 
     def threadFunc(self):
+        global faces, status
         with self.mp_hands.Hands(
                 min_detection_confidence=0.5,
                 min_tracking_confidence=0.5) as hands:
